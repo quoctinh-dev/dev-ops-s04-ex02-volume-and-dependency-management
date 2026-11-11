@@ -1,0 +1,13 @@
+GIẢI THÍCH CƠ CHẾ HEALTHCHECK TRONG DOCKER COMPOSE:
+
+1. Cơ chế hoạt động:
+- Mặc định, tùy chọn `depends_on` chỉ chờ container được khởi động (start) chứ không chờ ứng dụng bên trong container sẵn sàng nhận kết nối. Điều này dẫn đến lỗi backend bị crash do DB/Redis chưa kịp khởi tạo xong.
+- Cấu hình `healthcheck` giúp Docker liên tục kiểm tra trạng thái thực tế của service thông qua các câu lệnh nội bộ (command).
+
+2. Chi tiết các service trong bài:
+- PostgreSQL: Sử dụng lệnh `pg_isready -U admin -d storex_db` định kỳ mỗi 5 giây để xác nhận dịch vụ cơ sở dữ liệu đã mở cổng và sẵn sàng nhận query.
+- Redis: Sử dụng lệnh `redis-cli ping` để kiểm tra phản hồi từ Redis server (trả về PONG nghĩa là healthy).
+- Backend: Sử dụng điều kiện `condition: service_healthy` trong `depends_on` để ép buộc container backend chỉ khởi động sau khi cả Postgres và Redis đã chuyển sang trạng thái "healthy".
+
+3. Cơ chế Volume:
+- Khai báo volume `postgres_data` gắn vào thư mục `/var/lib/postgresql/data` giúp lưu trữ toàn bộ dữ liệu database ra ngoài vòng đời của container, đảm bảo dữ liệu không bị mất khi chạy lệnh `docker compose down`.
